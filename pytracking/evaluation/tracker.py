@@ -345,16 +345,29 @@ class Tracker:
 
         if optional_box is not None:
             assert isinstance(optional_box, (list, tuple))
-            assert len(optional_box) == 4, "valid box's format is [x,y,w,h]"
+            assert len(optional_box) % 4 == 0, "valid box's format is [x,y,w,h]" #now it accepts multiple bounding boxes
 
-            out = tracker.initialize(frame, {'init_bbox': OrderedDict({next_object_id: optional_box}),
-                                       'init_object_ids': [next_object_id, ],
-                                       'object_ids': [next_object_id, ],
-                                       'sequence_object_ids': [next_object_id, ]})
+            """opt_box_slicer
+               input: optional_box (list of all bounding boxes' parameters in order)
+               output: returns ordered dictionary where each key/value pair 
+                       contains a separate bounding box's parameters
+            """
+            def opt_box_slicer(bb_list):
+                bb_dict = OrderedDict()
+                for i in range(int(len(bb_list)/4)):
+                    bb_dict[i+1] = bb_list[i*4 : 4*(i+1)]
+                return bb_dict
+
+            opt_box_dict = opt_box_slicer(optional_box)
+
+            out = tracker.initialize(frame, {'init_bbox': opt_box_dict,
+                                       'init_object_ids': [i for i, j in opt_box_dict.items()],
+                                       'object_ids': [i for i, j in opt_box_dict.items()],
+                                       'sequence_object_ids': [i for i, j in opt_box_dict.items()]})
 
             prev_output = OrderedDict(out)
 
-            output_boxes[next_object_id] = [optional_box, ]
+            output_boxes = opt_box_dict
             sequence_object_ids.append(next_object_id)
             next_object_id += 1
 
