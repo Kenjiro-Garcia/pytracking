@@ -257,7 +257,7 @@ class Tracker:
 
         return output
 
-    def run_video_generic(self, debug=None, visdom_info=None, videofilepath=None, optional_box=None, save_results=False):
+    def run_video_generic(self, debug=None, visdom_info=None, videofilepath=None, optional_box=None, save_results=False, show_display=False):
         """Run the tracker with the webcam or a provided video file.
         args:
             debug: Debug level.
@@ -320,10 +320,11 @@ class Tracker:
 
         ui_control = UIControl()
 
-        display_name = 'Display: ' + self.name
-        cv.namedWindow(display_name, cv.WINDOW_NORMAL | cv.WINDOW_KEEPRATIO)
-        cv.resizeWindow(display_name, 960, 720)
-        cv.setMouseCallback(display_name, ui_control.mouse_callback)
+        if show_display == True:
+            display_name = 'Display: ' + self.name
+            cv.namedWindow(display_name, cv.WINDOW_NORMAL | cv.WINDOW_KEEPRATIO)
+            cv.resizeWindow(display_name, 960, 720)
+            cv.setMouseCallback(display_name, ui_control.mouse_callback)
 
         frame_number = 0
 
@@ -333,7 +334,9 @@ class Tracker:
             cap = cv.VideoCapture(videofilepath)
             ret, frame = cap.read()
             frame_number += 1
-            cv.imshow(display_name, frame)
+            
+            if show_display == True:
+                cv.imshow(display_name, frame)
         else:
             cap = cv.VideoCapture(0)
 
@@ -438,25 +441,26 @@ class Tracker:
                 cv.putText(frame_disp, msg, (10, 75), cv.FONT_HERSHEY_COMPLEX_SMALL, 1, font_color, 2)
 
             # Display the resulting frame
-            cv.imshow(display_name, frame_disp)
-            key = cv.waitKey(1)
-            if key == ord('q'):
-                break
-            elif key == ord('r'):
-                next_object_id = 1
-                sequence_object_ids = []
-                prev_output = OrderedDict()
+            if show_display == True:
+                cv.imshow(display_name, frame_disp)
+                key = cv.waitKey(1)
+                if key == ord('q'):
+                    break
+                elif key == ord('r'):
+                    next_object_id = 1
+                    sequence_object_ids = []
+                    prev_output = OrderedDict()
 
-                info = OrderedDict()
+                    info = OrderedDict()
 
-                info['object_ids'] = []
-                info['init_object_ids'] = []
-                info['init_bbox'] = OrderedDict()
-                tracker.initialize(frame, info)
-                ui_control.mode = 'init'
-            # 'Space' to pause video
-            elif key == 32 and videofilepath is not None:
-                paused = not paused
+                    info['object_ids'] = []
+                    info['init_object_ids'] = []
+                    info['init_bbox'] = OrderedDict()
+                    tracker.initialize(frame, info)
+                    ui_control.mode = 'init'
+                # 'Space' to pause video
+                elif key == 32 and videofilepath is not None:
+                    paused = not paused
 
         # When everything done, release the capture
         cap.release()
