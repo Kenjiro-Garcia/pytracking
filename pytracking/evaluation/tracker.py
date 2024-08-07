@@ -14,6 +14,7 @@ from ltr.data.bounding_box_utils import masks_to_bboxes
 from pytracking.evaluation.multi_object_wrapper import MultiObjectWrapper
 from pathlib import Path
 import torch
+import json
 
 
 _tracker_disp_colors = {1: (0, 255, 0), 2: (0, 0, 255), 3: (255, 0, 0),
@@ -333,7 +334,7 @@ class Tracker:
             ", videofilepath must be a valid videofile"
             cap = cv.VideoCapture(videofilepath)
             ret, frame = cap.read()
-            frame_number += 1
+            # frame_number += 1
             
             if show_display == True:
                 cv.imshow(display_name, frame)
@@ -375,16 +376,22 @@ class Tracker:
             next_object_id += 1
 
         # Wait for initial bounding box if video!
-        paused = videofilepath is not None
-
+        if show_display == True:
+            paused = videofilepath is not None
+        else:
+            paused = False
+        
+        counter = 0
+        bbox_per_frame = OrderedDict({})
+        
         while True:
-
             if not paused:
-                # Capture frame-by-frame
+                # Capture frame-by-frame    
                 ret, frame = cap.read()
-                frame_number += 1
                 if frame is None:
                     break
+            if counter % 600 == 0:
+                print(counter)
 
             frame_disp = frame.copy()
 
@@ -422,12 +429,14 @@ class Tracker:
                         cv.imwrite(self.results_dir + f"seg_{frame_number}.jpg", mask_image)
 
                 if 'target_bbox' in out:
+                    bbox_per_frame[counter] = {}
+                    
                     for obj_id, state in out['target_bbox'].items():
                         state = [int(s) for s in state]
-                        cv.rectangle(frame_disp, (state[0], state[1]), (state[2] + state[0], state[3] + state[1]),
-                                     _tracker_disp_colors[obj_id], 5)
+                        cv.rectangle(frame_disp, (state[0], state[1]), (state[2] + state[0], state[3] + state[1]), _tracker_disp_colors[obj_id], 5)
+                        
                         if save_results:
-                            output_boxes[obj_id].append(state)
+                            bbox_per_frame[counter][obj_id] = state
 
             # Put text
             font_color = (255, 255, 255)
@@ -461,6 +470,10 @@ class Tracker:
                 # 'Space' to pause video
                 elif key == 32 and videofilepath is not None:
                     paused = not paused
+            
+            if not paused:
+                counter += 1
+                frame_number += 1
 
         # When everything done, release the capture
         cap.release()
@@ -472,10 +485,8 @@ class Tracker:
             video_name = "webcam" if videofilepath is None else Path(videofilepath).stem
             base_results_path = os.path.join(self.results_dir, 'video_{}'.format(video_name))
             print(f"Save results to: {base_results_path}")
-            for obj_id, bbox in output_boxes.items():
-                tracked_bb = np.array(bbox).astype(int)
-                bbox_file = '{}_{}.txt'.format(base_results_path, obj_id)
-                np.savetxt(bbox_file, tracked_bb, delimiter='\t', fmt='%d')
+            with open(base_results_path + '.txt', 'w') as f: 
+                f.write(json.dumps(bbox_per_frame))
 
 
     def run_vot2020(self, debug=None, visdom_info=None):
