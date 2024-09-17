@@ -258,7 +258,7 @@ class Tracker:
 
         return output
 
-    def run_video_generic(self, debug=None, visdom_info=None, videofilepath=None, optional_box=None, save_results=False, show_display=False):
+    def run_video_generic(self, debug=None, visdom_info=None, videofilepath=None, bbox_dict=None, save_results=False, show_display=False):
         """Run the tracker with the webcam or a provided video file.
         args:
             debug: Debug level.
@@ -347,31 +347,19 @@ class Tracker:
         prev_output = OrderedDict()
         output_boxes = OrderedDict()
 
-        if optional_box is not None:
-            assert isinstance(optional_box, (list, tuple))
-            assert len(optional_box) % 4 == 0, "valid box's format is [x,y,w,h]" #now it accepts multiple bounding boxes
+        if bbox_dict is not None:
+            assert isinstance(bbox_dict, dict)
+            for flower, box in bbox_dict.items():
+                assert len(box) % 4 == 0, "valid box's format is [x,y,w,h]" #now it accepts multiple bounding boxes
 
-            """opt_box_slicer
-               input: optional_box (list of all bounding boxes' parameters in order)
-               output: returns ordered dictionary where each key/value pair 
-                       contains a separate bounding box's parameters
-            """
-            def opt_box_slicer(bb_list):
-                bb_dict = OrderedDict()
-                for i in range(int(len(bb_list)/4)):
-                    bb_dict[i+1] = bb_list[i*4 : 4*(i+1)]
-                return bb_dict
-
-            opt_box_dict = opt_box_slicer(optional_box)
-
-            out = tracker.initialize(frame, {'init_bbox': opt_box_dict,
-                                       'init_object_ids': [i for i, j in opt_box_dict.items()],
-                                       'object_ids': [i for i, j in opt_box_dict.items()],
-                                       'sequence_object_ids': [i for i, j in opt_box_dict.items()]})
+            out = tracker.initialize(frame, {'init_bbox': bbox_dict,
+                                       'init_object_ids': [i for i, j in bbox_dict.items()],
+                                       'object_ids': [i for i, j in bbox_dict.items()],
+                                       'sequence_object_ids': [i for i, j in bbox_dict.items()]})
 
             prev_output = OrderedDict(out)
 
-            output_boxes = opt_box_dict
+            output_boxes = bbox_dict
             sequence_object_ids.append(next_object_id)
             next_object_id += 1
 
@@ -429,14 +417,19 @@ class Tracker:
                         cv.imwrite(self.results_dir + f"seg_{frame_number}.jpg", mask_image)
 
                 if 'target_bbox' in out:
-                    bbox_per_frame[counter] = {}
-                    
+                    state_collector = []
+
                     for obj_id, state in out['target_bbox'].items():
                         state = [int(s) for s in state]
                         cv.rectangle(frame_disp, (state[0], state[1]), (state[2] + state[0], state[3] + state[1]), _tracker_disp_colors[obj_id], 5)
                         
                         if save_results:
-                            bbox_per_frame[counter][obj_id] = state
+                            state_collector.append(state)
+                    
+                    if save_results:
+                        #new dictionary per frame where the keys correspond to the labels from labelbee, and the values are the resulting bounding boxes
+                        bbox_per_frame[counter] = dict(zip(list(bbox_dict.keys()), state_collector)) 
+
 
             # Put text
             font_color = (255, 255, 255)
