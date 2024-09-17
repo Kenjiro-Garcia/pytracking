@@ -421,9 +421,14 @@ class Tracker:
 
                     for obj_id, state in out['target_bbox'].items():
                         state = [int(s) for s in state]
-                        cv.rectangle(frame_disp, (state[0], state[1]), (state[2] + state[0], state[3] + state[1]), _tracker_disp_colors[obj_id], 5)
+                        #cv.rectangle(frame_disp, (state[0], state[1]), (state[2] + state[0], state[3] + state[1]), _tracker_disp_colors[obj_id], 5)
+                        cv.rectangle(frame_disp, (state[0], state[1]), (state[2] + state[0], state[3] + state[1]), 5)
                         
                         if save_results:
+                            #transforms coordinates from Pytracking to LabelBee
+                            state[0] = state[0] + (state[2]/2)
+                            state[1] = state[1] + (state[3]/2)
+                            
                             state_collector.append(state)
                     
                     if save_results:

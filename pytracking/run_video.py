@@ -15,10 +15,15 @@ def bbox_collector(bbox_file):
         b_file = json.load(b)
     
     bbox_dict = {}
+    counter = 0
 
     #dict format: {flower: [x y w h]}
+    #transforms coordinates from LabelBee to Pytracking
     for flower in b_file['data']['0']:
-        bbox_dict[flower["id"]] = [flower["x"], flower["y"], flower["width"], flower["height"]]
+        counter += 1
+        bbox_dict[flower["id"]] = [flower["x"] - (flower["width"]/2), flower["y"] - (flower["height"]/2), flower["width"], flower["height"]]
+        if counter == 10:
+            break
     
     return bbox_dict
 
