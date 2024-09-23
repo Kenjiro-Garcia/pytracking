@@ -349,17 +349,36 @@ class Tracker:
 
         if bbox_dict is not None:
             assert isinstance(bbox_dict, dict)
-            for flower, box in bbox_dict.items():
+
+            """Takes the full dictionary from LabelBee and returns a smaller dictionary containing
+                only the bounding box parameters of the first 10 flowers on the first frame."""
+            def bbox_collector(bbox_d): 
+                #dict format: {flower: [x y w h]}           
+                smaller_bbox_dict = {}
+                counter = 0
+                
+                #transforms coordinates from LabelBee to Pytracking
+                for flower in bbox_d['data']['0']:
+                    counter += 1
+                    smaller_bbox_dict[flower["id"]] = [flower["x"] - (flower["width"]/2), flower["y"] - (flower["height"]/2), flower["width"], flower["height"]]
+                    if counter == 10:
+                        break
+                
+                return smaller_bbox_dict
+            
+            smaller_bbox_dict = bbox_collector(bbox_dict)
+
+            for flower, box in smaller_bbox_dict.items():
                 assert len(box) % 4 == 0, "valid box's format is [x,y,w,h]" #now it accepts multiple bounding boxes
 
-            out = tracker.initialize(frame, {'init_bbox': bbox_dict,
-                                       'init_object_ids': [i for i, j in bbox_dict.items()],
-                                       'object_ids': [i for i, j in bbox_dict.items()],
-                                       'sequence_object_ids': [i for i, j in bbox_dict.items()]})
+            out = tracker.initialize(frame, {'init_bbox': smaller_bbox_dict,
+                                       'init_object_ids': [i for i, j in smaller_bbox_dict.items()],
+                                       'object_ids': [i for i, j in smaller_bbox_dict.items()],
+                                       'sequence_object_ids': [i for i, j in smaller_bbox_dict.items()]})
 
             prev_output = OrderedDict(out)
 
-            output_boxes = bbox_dict
+            output_boxes = smaller_bbox_dict
             sequence_object_ids.append(next_object_id)
             next_object_id += 1
 
@@ -433,8 +452,15 @@ class Tracker:
                     
                     if save_results:
                         #new dictionary per frame where the keys correspond to the labels from labelbee, and the values are the resulting bounding boxes
-                        bbox_per_frame[counter] = dict(zip(list(bbox_dict.keys()), state_collector)) 
+                        #{frame: {flower: box}}
+                        bbox_per_frame[counter] = dict(zip(list(smaller_bbox_dict.keys()), state_collector)) 
 
+                        for flower, box in bbox_per_frame[counter].items():
+                            temp_time = counter/ 59.94005994005994
+                            temp_dict = {"id": f'R{flower}', "time": f'{temp_time:.3f}', "frame": counter, "x": box[0], "y": box[1],
+                                         "cx": box[0] + box[2]/2, "cy": box[1] + box[3]/2, "width": box[2], "height": box[3],
+                                         "angle": 0, "notes": "", "labels": ""}
+                            bbox_dict['data'][str(counter)].append(temp_dict)
 
             # Put text
             font_color = (255, 255, 255)
@@ -483,8 +509,11 @@ class Tracker:
             video_name = "webcam" if videofilepath is None else Path(videofilepath).stem
             base_results_path = os.path.join(self.results_dir, 'video_{}'.format(video_name))
             print(f"Save results to: {base_results_path}")
-            with open(base_results_path + '.txt', 'w') as f: 
+            with open(base_results_path + 'RESULTS_ONLY.json', 'w') as f: 
                 f.write(json.dumps(bbox_per_frame))
+
+            with open(base_results_path + 'TRACK_AND_REFERENCE.json', 'w') as f2:
+                f2.write(json.dumps(bbox_dict))
 
 
     def run_vot2020(self, debug=None, visdom_info=None):
