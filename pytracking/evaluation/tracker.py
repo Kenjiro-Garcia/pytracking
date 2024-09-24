@@ -460,7 +460,10 @@ class Tracker:
                             temp_dict = {"id": f'R{flower}', "time": f'{temp_time:.3f}', "frame": counter, "x": box[0], "y": box[1],
                                          "cx": box[0] + box[2]/2, "cy": box[1] + box[3]/2, "width": box[2], "height": box[3],
                                          "angle": 0, "notes": "", "labels": ""}
-                            bbox_dict['data'][str(counter)].append(temp_dict)
+                            if str(counter) in bbox_dict['data']:
+                                bbox_dict['data'][str(counter)].append(temp_dict)
+                            else:
+                                bbox_dict['data'] = {str(counter): [temp_dict]}
 
             # Put text
             font_color = (255, 255, 255)
