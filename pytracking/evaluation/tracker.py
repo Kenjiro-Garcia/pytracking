@@ -463,7 +463,7 @@ class Tracker:
                             if str(counter) in bbox_dict['data']:
                                 bbox_dict['data'][str(counter)].append(temp_dict)
                             else:
-                                bbox_dict['data'] = {str(counter): [temp_dict]}
+                                bbox_dict['data'][str(counter)] = [temp_dict]
 
             # Put text
             font_color = (255, 255, 255)
