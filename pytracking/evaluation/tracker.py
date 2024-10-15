@@ -360,7 +360,7 @@ class Tracker:
                 #transforms coordinates from LabelBee to Pytracking
                 for flower in bbox_d['data']['0']:
                     counter += 1
-                    smaller_bbox_dict[flower["id"]] = [flower["x"] - (flower["width"]/2), flower["y"] - (flower["height"]/2), flower["width"], flower["height"]]
+                    smaller_bbox_dict[flower["id"]] = [flower["x"], flower["y"], flower["width"], flower["height"]]
                     if counter == 10:
                         break
                 
@@ -443,11 +443,7 @@ class Tracker:
                         #cv.rectangle(frame_disp, (state[0], state[1]), (state[2] + state[0], state[3] + state[1]), _tracker_disp_colors[obj_id], 5)
                         cv.rectangle(frame_disp, (state[0], state[1]), (state[2] + state[0], state[3] + state[1]), 5)
                         
-                        if save_results:
-                            #transforms coordinates from Pytracking to LabelBee
-                            state[0] = state[0] + (state[2]/2)
-                            state[1] = state[1] + (state[3]/2)
-                            
+                        if save_results:                            
                             state_collector.append(state)
                     
                     if save_results:
@@ -458,7 +454,7 @@ class Tracker:
                         for flower, box in bbox_per_frame[counter].items():
                             temp_time = counter/ 59.94005994005994
                             temp_dict = {"id": f'R{flower}', "time": f'{temp_time:.3f}', "frame": counter, "x": box[0], "y": box[1],
-                                         "cx": box[0] + box[2]/2, "cy": box[1] + box[3]/2, "width": box[2], "height": box[3],
+                                         "cx": box[0], "cy": box[1], "width": box[2], "height": box[3],
                                          "angle": 0, "notes": "", "labels": ""}
                             if str(counter) in bbox_dict['data']:
                                 bbox_dict['data'][str(counter)].append(temp_dict)
