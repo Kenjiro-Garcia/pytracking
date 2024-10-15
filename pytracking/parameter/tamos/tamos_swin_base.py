@@ -7,9 +7,9 @@ def parameters():
     params.debug = 0
     params.visualization = False
 
-    params.use_gpu = True
+    params.use_gpu = False
 
-    params.train_feature_size = [169, 95]
+    params.train_feature_size = [24, 36]
     params.feature_stride = 16
     params.image_sample_size = [params.feature_stride*tfs for tfs in params.train_feature_size]
     params.search_area_scale = 5
