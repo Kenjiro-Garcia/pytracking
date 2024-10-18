@@ -357,12 +357,13 @@ class Tracker:
                 smaller_bbox_dict = {}
                 counter = 0
                 
-                #transforms coordinates from LabelBee to Pytracking
+                #transforms coordinates for cropped video. excluded F11 cuz it's not part of the crop
                 for flower in bbox_d['data']['0']:
-                    counter += 1
-                    smaller_bbox_dict[flower["id"]] = [flower["x"], flower["y"], flower["width"], flower["height"]]
-                    if counter == 10:
-                        break
+                    if flower["id"] != 'F11':
+                        counter += 1
+                        smaller_bbox_dict[flower["id"]] = [flower["x"] - 195, flower["y"] - 258, flower["width"], flower["height"]]
+                        if counter == 10:
+                            break
                 
                 return smaller_bbox_dict
             
@@ -454,7 +455,7 @@ class Tracker:
                         for flower, box in bbox_per_frame[counter].items():
                             temp_time = counter/ 59.94005994005994
                             temp_dict = {"id": f'R{flower}', "time": f'{temp_time:.3f}', "frame": counter, "x": box[0], "y": box[1],
-                                         "cx": box[0], "cy": box[1], "width": box[2], "height": box[3],
+                                         "cx": box[0] + box[2]/2, "cy": box[1] + box[3]/2, "width": box[2], "height": box[3],
                                          "angle": 0, "notes": "", "labels": ""}
                             if str(counter) in bbox_dict['data']:
                                 bbox_dict['data'][str(counter)].append(temp_dict)
