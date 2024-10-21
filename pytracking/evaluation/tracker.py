@@ -350,7 +350,7 @@ class Tracker:
         crop_x = 0
         crop_y = 0
         if crop_params is not None:
-            assert isinstance(crop_params, list, tuple)
+            assert isinstance(crop_params, list)
             crop_x = crop_params[0]
             crop_y = crop_params[1]
             
