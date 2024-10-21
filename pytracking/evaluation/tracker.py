@@ -358,6 +358,12 @@ class Tracker:
         if bbox_dict is not None:
             assert isinstance(bbox_dict, dict)
             
+            #change all key frame box parameters to match cropped video coordinates
+            for i in range(0, 18000, 1800):
+                for flower in bbox_dict['data'][str(i)]:
+                    flower['x'] -= crop_x
+                    flower['y'] -= crop_y 
+
             """Takes the full dictionary from LabelBee and returns a smaller dictionary containing
                 only the bounding box parameters of the first 10 flowers on the first frame."""
             def bbox_collector(bbox_d): 
@@ -366,13 +372,12 @@ class Tracker:
                 counter = 0
                 
                 #transforms coordinates for cropped video. excluded F11 cuz it's not part of the crop
-                for i in range(0, 18000, 1800):
-                    for flower in bbox_d['data'][str(i)]:
-                        if flower["id"] != 'F11':
-                            counter += 1
-                            smaller_bbox_dict[flower["id"]] = [flower["x"] - crop_x, flower["y"] - crop_y, flower["width"], flower["height"]]
-                            if counter == 10:
-                                break
+                for flower in bbox_d['data']['0']:
+                    if flower["id"] != 'F11':
+                        counter += 1
+                        smaller_bbox_dict[flower["id"]] = [flower["x"], flower["y"], flower["width"], flower["height"]]
+                        if counter == 10:
+                            break
                 
                 return smaller_bbox_dict
             
