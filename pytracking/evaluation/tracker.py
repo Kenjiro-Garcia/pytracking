@@ -258,7 +258,7 @@ class Tracker:
 
         return output
 
-    def run_video_generic(self, debug=None, visdom_info=None, videofilepath=None, bbox_dict=None, save_results=False, show_display=False):
+    def run_video_generic(self, debug=None, visdom_info=None, videofilepath=None, bbox_dict=None, crop_params=None, save_results=False, show_display=False):
         """Run the tracker with the webcam or a provided video file.
         args:
             debug: Debug level.
@@ -347,9 +347,17 @@ class Tracker:
         prev_output = OrderedDict()
         output_boxes = OrderedDict()
 
+        crop_x = 0
+        crop_y = 0
+        if crop_params is not None:
+            assert isinstance(crop_params, list, tuple)
+            crop_x = crop_params[0]
+            crop_y = crop_params[1]
+            
+
         if bbox_dict is not None:
             assert isinstance(bbox_dict, dict)
-
+            
             """Takes the full dictionary from LabelBee and returns a smaller dictionary containing
                 only the bounding box parameters of the first 10 flowers on the first frame."""
             def bbox_collector(bbox_d): 
@@ -358,12 +366,13 @@ class Tracker:
                 counter = 0
                 
                 #transforms coordinates for cropped video. excluded F11 cuz it's not part of the crop
-                for flower in bbox_d['data']['0']:
-                    if flower["id"] != 'F11':
-                        counter += 1
-                        smaller_bbox_dict[flower["id"]] = [flower["x"] - 195, flower["y"] - 258, flower["width"], flower["height"]]
-                        if counter == 10:
-                            break
+                for i in range(0, 18000, 1800):
+                    for flower in bbox_d['data'][str(i)]:
+                        if flower["id"] != 'F11':
+                            counter += 1
+                            smaller_bbox_dict[flower["id"]] = [flower["x"] - crop_x, flower["y"] - crop_y, flower["width"], flower["height"]]
+                            if counter == 10:
+                                break
                 
                 return smaller_bbox_dict
             
